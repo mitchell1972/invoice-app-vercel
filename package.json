@@ -1,0 +1,22 @@
+{
+  "name": "invoice-vercel",
+  "version": "1.0.0",
+  "main": "api/index.js",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "dev": "concurrently \"npm --prefix api run dev\" \"npm --prefix frontend run dev\"",
+    "start": "npm --prefix api start"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "body-parser": "^2.2.0",
+    "nodemailer": "^6.9.1",
+    "stripe": "^12.6.0",
+    "serverless-http": "^3.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
