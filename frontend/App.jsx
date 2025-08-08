@@ -2,6 +2,40 @@ import React, { useEffect, useState } from 'react';
 // Import Stripe hooks and components for handling card input and payments
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import axios from 'axios';
+// We previously imported icons from an external library, but instead we now
+// define inline SVG icons below to avoid adding extra dependencies. The
+// components expose a `className` prop so you can easily size and colour
+// them using Tailwind utility classes.
+
+// CheckIcon renders a simple check mark. It's used throughout the UI to
+// reinforce feature lists and success messages.
+const CheckIcon = ({ className = '' }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+// StarIcon renders a five‑point star. We use this in our sign up and login
+// pages to display the average rating in the call‑to‑action section. The
+// `className` prop allows you to set colour and size via Tailwind classes.
+const StarIcon = ({ className = '' }) => (
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="none"
+  >
+    <path d="M12 2l2.9 6.1 6.7.9-4.8 4.7 1.1 6.6L12 17.3 6.1 20.3l1.1-6.6-4.8-4.7 6.7-.9L12 2z" />
+  </svg>
+);
 
 /**
  * Main application component.
@@ -12,7 +46,10 @@ export default function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null); // holds user subscription and trial info
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [signupData, setSignupData] = useState({ email: '', password: '', mobile: '' });
+  // Signup form state now includes fullName. The backend does not require
+  // fullName so we strip it before sending, but keeping it here allows
+  // collection on the client for a more complete registration experience.
+  const [signupData, setSignupData] = useState({ fullName: '', email: '', password: '', mobile: '' });
   const [invoices, setInvoices] = useState([]);
   const [invoiceForm, setInvoiceForm] = useState({
     customer: '',
@@ -161,10 +198,13 @@ export default function App() {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
-      // signupData includes email, password and mobile
-      await api.post('/signup', signupData);
-      alert('Registration successful, please log in');
-      setPage('login');
+      // Extract fullName before sending signup data to the server. The backend
+      // only expects email, password and mobile fields. We ignore fullName on
+      // the server but keep it client‑side for a more polished UI.
+      const { fullName, ...payload } = signupData;
+      await api.post('/signup', payload);
+      // Upon successful signup, show a success page prompting the user to log in
+      setPage('signupSuccess');
     } catch (err) {
       alert(err.response?.data?.error || 'Signup failed');
     }
@@ -283,40 +323,64 @@ export default function App() {
   // Render login page
   if (page === 'login') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white shadow-lg rounded-lg p-6 max-w-sm w-full">
-          <h1 className="text-2xl font-bold mb-4 text-center">Login</h1>
-          <form onSubmit={handleLogin} className="space-y-4">
+      <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
+        {/* Left column: sign in form */}
+        <div className="md:w-1/2 flex flex-col justify-center px-8 py-12">
+          <h1 className="text-4xl font-extrabold mb-4 text-gray-900">Sign in to your account</h1>
+          <p className="text-gray-600 mb-6 max-w-md">Manage your invoices, clients and payments all in one place.</p>
+          <form onSubmit={handleLogin} className="space-y-4 max-w-md">
             <div>
-              <label className="block text-sm font-medium">Email</label>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
                 required
-                className="mt-1 w-full border rounded p-2"
+                className="mt-1 w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={loginData.email}
                 onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Password</label>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
               <input
                 type="password"
                 required
-                className="mt-1 w-full border rounded p-2"
+                className="mt-1 w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={loginData.password}
                 onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
               />
             </div>
-            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-              Login
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition-colors"
+            >
+              Sign in
             </button>
           </form>
-          <p className="mt-4 text-sm text-center">
+          <p className="mt-6 text-sm">
             Don't have an account?{' '}
             <button className="text-blue-600 hover:underline" onClick={() => setPage('signup')}>
-              Sign up
+              Start free trial
             </button>
           </p>
+        </div>
+        {/* Right column: hero image and feature overlay (hidden on small screens) */}
+        <div className="hidden md:block md:w-1/2 relative overflow-hidden">
+          <img src="/hero.png" alt="Creative professional" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute bottom-8 left-8 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg max-w-xs">
+            <h2 className="text-lg font-bold mb-2">With your trial you can…</h2>
+            <ul className="space-y-1 text-sm text-gray-700">
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Send invoices</li>
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Accept payments</li>
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Manage cash flow</li>
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Track projects</li>
+            </ul>
+            <div className="mt-3 flex items-center">
+              <StarIcon className="w-4 h-4 text-yellow-500 mr-1" />
+              <span className="font-bold mr-1">4.8</span>
+              <span className="text-xs text-gray-600">Average rating</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-1">Thousands of freelancers use our app to get paid faster.</p>
+          </div>
         </div>
       </div>
     );
@@ -325,50 +389,113 @@ export default function App() {
   // Render signup page
   if (page === 'signup') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white shadow-lg rounded-lg p-6 max-w-sm w-full">
-          <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
-          <form onSubmit={handleSignup} className="space-y-4">
+      <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
+        {/* Left column: sign up form */}
+        <div className="md:w-1/2 flex flex-col justify-center px-8 py-12">
+          <h1 className="text-4xl font-extrabold mb-4 text-gray-900">Start your free 7‑day trial</h1>
+          <p className="text-gray-600 mb-6 max-w-md">Create your account and explore all the features of our invoicing platform. No credit card required.</p>
+          <form onSubmit={handleSignup} className="space-y-4 max-w-md">
             <div>
-              <label className="block text-sm font-medium">Email</label>
+              <label className="block text-sm font-medium text-gray-700">Full name</label>
+              <input
+                type="text"
+                required
+                className="mt-1 w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={signupData.fullName}
+                onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
               <input
                 type="email"
                 required
-                className="mt-1 w-full border rounded p-2"
+                className="mt-1 w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={signupData.email}
                 onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Mobile Number</label>
+              <label className="block text-sm font-medium text-gray-700">Mobile number</label>
               <input
                 type="tel"
                 required
-                className="mt-1 w-full border rounded p-2"
+                className="mt-1 w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={signupData.mobile}
                 onChange={(e) => setSignupData({ ...signupData, mobile: e.target.value })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Password</label>
+              <label className="block text-sm font-medium text-gray-700">Password</label>
               <input
                 type="password"
                 required
-                className="mt-1 w-full border rounded p-2"
+                className="mt-1 w-full border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={signupData.password}
                 onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
               />
             </div>
-            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-              Create Account
+            <div className="flex items-start text-sm">
+              <input type="checkbox" checked readOnly className="mt-1 mr-2" />
+              <span>By continuing, you agree to our <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> &amp; <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>.</span>
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition-colors"
+            >
+              Try it free
             </button>
           </form>
-          <p className="mt-4 text-sm text-center">
+          <p className="mt-6 text-sm">
             Already have an account?{' '}
             <button className="text-blue-600 hover:underline" onClick={() => setPage('login')}>
               Log in
             </button>
           </p>
+        </div>
+        {/* Right column: hero image and overlay features */}
+        <div className="hidden md:block md:w-1/2 relative overflow-hidden">
+          <img src="/hero.png" alt="Creative professional" className="absolute inset-0 w-full h-full object-cover" />
+          {/* Feature overlay positioned at center right */}
+          <div className="absolute top-1/2 transform -translate-y-1/2 right-8 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg max-w-xs">
+            <h2 className="text-lg font-bold mb-2">With your trial you can…</h2>
+            <ul className="space-y-1 text-sm text-gray-700">
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Send invoices</li>
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Accept payments</li>
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Manage cash flow</li>
+              <li className="flex items-center"><CheckIcon className="w-4 h-4 text-green-600 mr-2" />Track projects</li>
+            </ul>
+          </div>
+          {/* Rating and social proof at bottom right */}
+          <div className="absolute bottom-8 right-8 bg-white bg-opacity-90 p-4 rounded-lg shadow-lg max-w-xs">
+            <div className="flex items-center">
+              <StarIcon className="w-4 h-4 text-yellow-500 mr-1" />
+              <span className="font-bold mr-1">4.8</span>
+              <span className="text-xs text-gray-600">Average rating</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-1">Over 225,000 businesses trust us to get paid faster.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render signup success page
+  if (page === 'signupSuccess') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-6 text-center">
+          <CheckIcon className="w-12 h-12 text-green-600 mx-auto" />
+          <h1 className="text-2xl font-extrabold text-gray-900">Account created</h1>
+          <p className="text-gray-600 text-sm">
+            Your account has been created successfully. Please sign in to start your free trial.
+          </p>
+          <button
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
+            onClick={() => setPage('login')}
+          >
+            Sign in
+          </button>
         </div>
       </div>
     );
