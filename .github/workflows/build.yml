@@ -1,10 +1,7 @@
 name: Build Frontend and Commit Dist
 
-on:
-  push:
-    paths:
-      - 'frontend/**'
-      - '!frontend/dist/**'
+on: push
+
 jobs:
   build:
     runs-on: ubuntu-latest
