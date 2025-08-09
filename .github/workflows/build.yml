@@ -1,0 +1,27 @@
+name: Build Frontend and Commit Dist
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+      - '!frontend/dist/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm ci
+      - run: npm run build
+      - name: Commit updated dist
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add dist
+          git commit -m "chore: rebuild frontend dist" || echo "No changes to commit"
+          git push
